@@ -19,14 +19,18 @@ const PORT = process.env.PORT || 3000;
 
 // default middleware
 app.use(express.json());
+//cokie aik choti si text file hoti hy jis may user ki id save hoti jo express browser
+//  ki memory may save krta hy
 app.use(cookieParser());
-
+//us cookie ko read karny kay liya ya middleware hy
 app.use(cors({
     origin:"http://localhost:5173",
     credentials:true
 }));
- 
-// apis
+ //ya frontend our backend ko connect krta hy is kay zarya cookie send kr sakty hy dono end say
+
+
+// ya sab router hy request ko handle kr rahy hy
 app.use("/api/v1/media", mediaRoute);
 app.use("/api/v1/user", userRoute);
 app.use("/api/v1/course", courseRoute);

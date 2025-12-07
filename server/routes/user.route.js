@@ -4,7 +4,7 @@ import isAuthenticated from "../middlewares/isAuthenticated.js";
 import upload from "../utils/multer.js";
 
 const router = express.Router();
-
+ //ab yaha ho jo user kay agay sary route deinfe krdia hy
 router.route("/register").post(register);
 router.route("/login").post(login);
 router.route("/logout").get(logout);

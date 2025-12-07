@@ -174,6 +174,7 @@ export const createLecture = async (req,res) => {
     try {
         const {lectureTitle} = req.body;
         const {courseId} = req.params;
+        const video = req.file; // assume multer middleware is used
 
         if(!lectureTitle || !courseId){
             return res.status(400).json({
@@ -181,8 +182,15 @@ export const createLecture = async (req,res) => {
             })
         };
 
+        let videoUrl, publicId;
+        if(video){
+            const uploadResult = await uploadMedia(video.path); // cloudinary upload helper
+            videoUrl = uploadResult.secure_url;
+            publicId = uploadResult.public_id;
+        }
+
         // create lecture
-        const lecture = await Lecture.create({lectureTitle});
+        const lecture = await Lecture.create({lectureTitle, videoUrl, publicId});
 
         const course = await Course.findById(courseId);
         if(course){

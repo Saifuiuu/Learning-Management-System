@@ -6,6 +6,7 @@ import { User } from "../models/user.model.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// 1. Create Checkout Session (Payment Link banana)
 export const createCheckoutSession = async (req, res) => {
   try {
     const userId = req.id;
@@ -28,25 +29,25 @@ export const createCheckoutSession = async (req, res) => {
       line_items: [
         {
           price_data: {
-            currency: "inr",
+            currency: "usd",
             product_data: {
               name: course.courseTitle,
               images: [course.courseThumbnail],
             },
-            unit_amount: course.coursePrice * 100, // Amount in paise (lowest denomination)
+            unit_amount: course.coursePrice * 100, // Amount in cents
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `http://localhost:5173/course-progress/${courseId}`, // once payment successful redirect to course progress page
+      success_url: `http://localhost:5173/course-progress/${courseId}`,
       cancel_url: `http://localhost:5173/course-detail/${courseId}`,
       metadata: {
         courseId: courseId,
         userId: userId,
       },
       shipping_address_collection: {
-        allowed_countries: ["IN"], // Optionally restrict allowed countries
+        allowed_countries: ["US", "PK", "IN"],
       },
     });
 
@@ -62,13 +63,14 @@ export const createCheckoutSession = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      url: session.url, // Return the Stripe checkout URL
+      url: session.url,
     });
   } catch (error) {
     console.log(error);
   }
 };
 
+// 2. Stripe Webhook (Payment Verify karke DB update karna)
 export const stripeWebhook = async (req, res) => {
   let event;
 
@@ -120,14 +122,14 @@ export const stripeWebhook = async (req, res) => {
       // Update user's enrolledCourses
       await User.findByIdAndUpdate(
         purchase.userId,
-        { $addToSet: { enrolledCourses: purchase.courseId._id } }, // Add course ID to enrolledCourses
+        { $addToSet: { enrolledCourses: purchase.courseId._id } },
         { new: true }
       );
 
       // Update course to add user ID to enrolledStudents
       await Course.findByIdAndUpdate(
         purchase.courseId._id,
-        { $addToSet: { enrolledStudents: purchase.userId } }, // Add user ID to enrolledStudents
+        { $addToSet: { enrolledStudents: purchase.userId } },
         { new: true }
       );
     } catch (error) {
@@ -137,6 +139,8 @@ export const stripeWebhook = async (req, res) => {
   }
   res.status(200).send();
 };
+
+// 3. Get Course Detail with Purchase Status
 export const getCourseDetailWithPurchaseStatus = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -147,21 +151,21 @@ export const getCourseDetailWithPurchaseStatus = async (req, res) => {
       .populate({ path: "lectures" });
 
     const purchased = await CoursePurchase.findOne({ userId, courseId });
-    console.log(purchased);
-
+    
     if (!course) {
       return res.status(404).json({ message: "course not found!" });
     }
 
     return res.status(200).json({
       course,
-      purchased: !!purchased, // true if purchased, false otherwise
+      purchased: !!purchased,
     });
   } catch (error) {
     console.log(error);
   }
 };
 
+// 4. Get All Purchased Courses
 export const getAllPurchasedCourse = async (_, res) => {
   try {
     const purchasedCourse = await CoursePurchase.find({
